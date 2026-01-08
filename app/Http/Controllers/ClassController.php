@@ -11,13 +11,13 @@ class ClassController extends Controller
     public function index()
     {
         $kelas = Kelas::orderBy('nama_kelas')->paginate(10);
-        return view('classes.index', compact('kelas'));
+        return view('Teacher.classes.index', compact('kelas'));
     }
 
     // Form tambah kelas
     public function create()
     {
-        return view('classes.create');
+        return view('Teacher.classes.create');
     }
 
     // Simpan kelas baru
@@ -31,7 +31,7 @@ class ClassController extends Controller
             'nama_kelas' => strtoupper($request->nama_kelas)
         ]);
 
-        return redirect()->route('classes.index')
+        return redirect()->route('Teacher.classes.index')
             ->with('success', 'Kelas berhasil ditambahkan!');
     }
 
@@ -39,14 +39,14 @@ class ClassController extends Controller
     public function show($id)
     {
         $kelas = Kelas::findOrFail($id);
-        return view('classes.show', compact('kelas'));
+        return view('Teacher.classes.show', compact('kelas'));
     }
 
     // Form edit kelas
     public function edit($id)
     {
         $kelas = Kelas::findOrFail($id);
-        return view('classes.edit', compact('kelas'));
+        return view('Teacher.classes.edit', compact('kelas'));
     }
 
     // Update kelas
@@ -62,7 +62,7 @@ class ClassController extends Controller
             'nama_kelas' => strtoupper($request->nama_kelas)
         ]);
 
-        return redirect()->route('classes.show', $kelas->id)
+        return redirect()->route('Teacher.classes.show', $kelas->id)
             ->with('success', 'Kelas berhasil diperbarui!');
     }
 
@@ -72,7 +72,7 @@ class ClassController extends Controller
         $kelas = Kelas::findOrFail($id);
         $kelas->delete();
 
-        return redirect()->route('classes.index')
+        return redirect()->route('Teacher.classes.index')
             ->with('success', 'Kelas berhasil dihapus!');
     }
 }

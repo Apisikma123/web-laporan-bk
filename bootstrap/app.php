@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'teacher' => \App\Http\Middleware\TeacherMiddleware::class,
-            // Jika perlu, tambahkan juga role middleware
+            'check.role' => \App\Http\Middleware\CheckRole::class, // ← TAMBAHKAN INI
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
     })

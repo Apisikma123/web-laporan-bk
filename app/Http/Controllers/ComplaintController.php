@@ -3,140 +3,126 @@
 namespace App\Http\Controllers;
 
 use App\Models\Complaint;
-use App\Models\Kelas; // Ganti SchoolClass dengan Kelas
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class ComplaintController extends Controller
 {
-    // ==================== UNTUK SISWA (PUBLIC) ====================
-    
-    /**
-     * Form buat laporan konseling (untuk siswa)
-     */
     public function create()
     {
-        // Ambil data kelas untuk dropdown
-        $classes = Kelas::orderBy('nama_kelas')->get();
+        // Ambil data kelas dari database - kolomnya 'nama_kelas'
+        $classes = DB::table('classes')
+            ->select('id', 'nama_kelas')
+            ->orderBy('nama_kelas')
+            ->get();
         
-        return view('complaints.create', compact('classes'));
+        return view('students.complaints.create', compact('classes'));
     }
-
-    /**
-     * Simpan laporan konseling (untuk siswa)
-     */
+    
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'student_name' => 'required|string|max:100',
-            'student_email' => 'required|email|max:100',
-            'student_class' => 'required|string|max:20',
-            'complaint_type' => 'required|string|max:50',
-            'description' => 'required|string|min:100|max:2000',
+{
+    $validated = $request->validate([
+        'nama_lengkap' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'kelas' => 'required|string|max:100',
+        'jenis' => 'required|in:akademik,sosial,karir,pribadi,darurat,lainnya',
+        'deskripsi' => 'required|string|min:100|max:5000',
+        'no_wa' => 'nullable|string|max:20',
+    ]);
+    
+    // Generate unique code
+    $uniqueCode = 'CINTA-' . strtoupper(substr(md5(uniqid()), 0, 6));
+    
+    // Tentukan priority
+    $priority = $this->determinePriority($validated['jenis']);
+    
+    // Simpan ke database
+    $complaint = Complaint::create([
+        'unique_code' => $uniqueCode,
+        'student_name' => $validated['nama_lengkap'],
+        'student_email' => $validated['email'],
+        'student_class' => $validated['kelas'],
+        'phone_number' => $validated['no_wa'] ?? null,
+        'counseling_type' => $validated['jenis'],
+        'description' => $validated['deskripsi'],
+        'status' => 'pending',
+        'priority_level' => $priority,
+    ]);
+    
+    // Jika AJAX request
+    if ($request->ajax() || $request->wantsJson()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Cerita berhasil dikirim!',
+            'unique_code' => $uniqueCode,
+            'redirect' => route('complaint.track')
         ]);
-
-        $priority = $this->determinePriority($validated['complaint_type']);
-        
-        $complaint = Complaint::create([
-            'unique_code' => 'BK-' . Str::upper(Str::random(8)),
-            'student_name' => $validated['student_name'],
-            'student_email' => $validated['student_email'],
-            'student_class' => $validated['student_class'],
-            'counseling_type' => $validated['complaint_type'],
-            'description' => $validated['description'],
-            'status' => 'pending',
-            'priority_level' => $priority,
-        ]);
-
-        return redirect()->route('complaint.show', $complaint->unique_code)
-            ->with('success', 'Laporan konseling berhasil dikirim! Kode tracking: ' . $complaint->unique_code);
     }
+    
+    // Redirect biasa
+    return redirect()->route('complaint.track')
+        ->with('success', 'Ceritamu berhasil dikirim! Kode rahasiamu: ' . $uniqueCode)
+        ->with('code', $uniqueCode);
+}
 
-    /**
-     * Cek status laporan (untuk siswa)
-     */
+private function determinePriority($jenis)
+{
+    return match($jenis) {
+        'darurat' => 'urgent',
+        'pribadi' => 'high',
+        default => 'medium'
+    };
+}
+    
     public function track()
     {
-        return view('complaints.track');
+        return view('students.complaints.track');
     }
+    
+    // app/Http/Controllers/ComplaintController.php
 
     public function check(Request $request)
     {
         $request->validate([
-            'code' => 'required|string|size:11|regex:/^BK-[A-Z0-9]{8}$/',
+            'kode' => 'required|string',
         ]);
         
-        $complaint = Complaint::where('unique_code', $request->code)->first();
+        // Gunakan 'unique_code' bukan 'kode'
+        $complaint = Complaint::where('unique_code', $request->kode)->first();
         
         if (!$complaint) {
-            return back()->with('error', 'Kode tidak ditemukan. Periksa kembali kode Anda.');
+            return back()->with('error', 'Kode tidak ditemukan. Silakan cek kembali.');
         }
         
-        return redirect()->route('complaint.show', $complaint->unique_code);
+        return view('students.complaints.result', compact('complaint'));
     }
 
-    /**
-     * Lihat detail laporan (untuk siswa)
-     */
-    public function show($code)
+        public function adminIndex()
     {
-        $complaint = Complaint::where('unique_code', $code)->firstOrFail();
+        // Ambil semua laporan dengan pagination
+        $complaints = Complaint::latest()->paginate(20);
         
-        return view('complaints.show-public', compact('complaint'));
+        return view('Teacher.complaints.index', compact('complaints'));
     }
 
-    // ==================== UNTUK GURU (PROTECTED) ====================
+    // app/Http/Controllers/ComplaintController.php
+
+
+
+public function adminShow($id)
+{
+    // Ambil data complaint berdasarkan ID
+    $complaint = Complaint::findOrFail($id);
     
-    /**
-     * Daftar semua laporan (untuk guru)
-     */
-    public function index()
+    // Tampilkan view detail untuk admin/guru
+    return view('Teacher.complaints.show', compact('complaint'));
+}
+public function show($id)
     {
-        $complaints = Complaint::latest()->paginate(15);
-        
-        return view('complaints.index', compact('complaints'));
-    }
-
-    /**
-     * Lihat detail laporan lengkap (untuk guru)
-     */
-    public function showReport($id)
-    {
+        // Ambil data complaint berdasarkan ID
         $complaint = Complaint::findOrFail($id);
         
-        return view('complaints.show-teacher', compact('complaint'));
-    }
-
-    /**
-     * Update status laporan (untuk guru)
-     */
-    public function updateStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,processed,resolved',
-            'notes' => 'nullable|string|max:1000',
-        ]);
-        
-        $complaint = Complaint::findOrFail($id);
-        $complaint->update([
-            'status' => $request->status,
-            'admin_notes' => $request->notes,
-            'processed_by' => auth()->id(),
-            'processed_at' => now(),
-        ]);
-        
-        return back()->with('success', 'Status laporan berhasil diperbarui!');
-    }
-
-    // ==================== HELPER FUNCTION ====================
-    
-    private function determinePriority($type)
-    {
-        $highPriority = ['darurat', 'bullying', 'kecemasan_berat'];
-        $mediumPriority = ['keluarga', 'kecemasan', 'pertemanan'];
-        
-        if (in_array($type, $highPriority)) return 'high';
-        if (in_array($type, $mediumPriority)) return 'medium';
-        return 'low';
+        // Tampilkan view detail untuk admin/guru
+        return view('Teacher.complaints.show', compact('complaint'));
     }
 }
