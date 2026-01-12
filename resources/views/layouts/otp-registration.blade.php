@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Registrasi Guru - CINTA')</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/icon.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -136,8 +137,8 @@
         <div class="registration-container">
             <!-- Header - Responsive -->
             <div class="text-center mb-6 sm:mb-8 md:mb-10 px-2">
-                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl mb-4 sm:mb-6 transform hover:scale-105 transition duration-300 animate-float">
-                    <span class="text-2xl sm:text-3xl font-bold text-white">C</span>
+                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-white-600 to-white-800 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl mb-4 sm:mb-6 transform hover:scale-105 transition duration-300 animate-float">
+                    <img src="{{ asset('img/icon.png') }}" alt="CINTA Logo" class="w-10 h-10 sm:w-12 sm:h-12 object-contain">
                 </div>
                 <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
                     Sistem <span class="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">CINTA</span>
@@ -323,5 +324,6 @@
             </div>
         </div>
     </div>
+    @stack('scripts')
 </body>
 </html>

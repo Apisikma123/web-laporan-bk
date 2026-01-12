@@ -14,9 +14,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'teacher_id',
-        'subject',
-        'role',
+        'role', // Pastikan ini ada
+        'phone',
+        'status',
     ];
 
     protected $hidden = [
@@ -24,22 +24,26 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    // Scope untuk guru
+    public function scopeTeachers($query)
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $query->where('role', 'teacher');
     }
 
-    // Helper method untuk cek role
+    // Scope untuk admin
+    public function scopeAdmins($query)
+    {
+        return $query->where('role', 'admin');
+    }
+
+    // Cek apakah user adalah guru
     public function isTeacher()
     {
         return $this->role === 'teacher';
-    }
-
-    public function isAdmin()
-    {
-        return $this->role === 'admin';
     }
 }

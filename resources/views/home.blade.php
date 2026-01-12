@@ -15,7 +15,7 @@
 @section('content')
 
     <!-- Hero Section - Enhanced for teens -->
-    <section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
+    <section class="hero-section fixed-bg relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         <!-- Animated Particles Background -->
         <div class="absolute inset-0" id="particles-js"></div>
         
@@ -74,33 +74,33 @@
                 </a>
             </div>
             
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto animate-stagger-children-delayed">
+            <!-- Stats Cards - PERBAIKAN: Semua card sama tinggi dan sejajar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                 @php
                     $stats = [
-                        ['icon' => 'user-friends', 'value' => $totalStudents ?? 0, 'label' => 'Siswa Bergabung', 'color' => 'from-blue-400 to-cyan-400', 'suffix' => '+'],
-                        ['icon' => 'check-double', 'value' => $totalComplaints ?? 0, 'label' => 'Konseling Selesai', 'color' => 'from-green-400 to-emerald-400', 'suffix' => '+'],
-                        ['icon' => 'shield-alt', 'value' => '100%', 'label' => 'Privasi Terjaga', 'color' => 'from-purple-400 to-pink-400', 'suffix' => ''],
-                        ['icon' => 'headset', 'value' => '24/7', 'label' => 'Support Online', 'color' => 'from-orange-400 to-red-400', 'suffix' => ''],
+                        ['icon' => 'user-friends', 'value' => $totalStudents ?? 0, 'label' => 'Siswa Bergabung', 'color' => 'from-blue-500 to-blue-600', 'suffix' => '+'],
+                        ['icon' => 'check-double', 'value' => $totalComplaints ?? 0, 'label' => 'Laporan Diterima', 'color' => 'from-green-500 to-green-600', 'suffix' => '+'],
+                        ['icon' => 'shield-alt', 'value' => '100%', 'label' => 'Privasi Terjaga', 'color' => 'from-purple-500 to-purple-600', 'suffix' => ''],
+                        ['icon' => 'headset', 'value' => '24/7', 'label' => 'Support Online', 'color' => 'from-pink-500 to-pink-600', 'suffix' => ''],
                     ];
                 @endphp
                 
                 @foreach($stats as $stat)
                 <div class="group cursor-pointer transform transition-all duration-300 hover:-translate-y-2 animate-slide-up" style="animation-delay: {{ $loop->index * 0.1 }}s">
-                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300">
-                        <div class="flex items-center gap-4 mb-4">
+                    <div class="stats-card bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300">
+                        <div class="flex items-center gap-4">
                             <div class="w-12 h-12 bg-gradient-to-br {{ $stat['color'] }} rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
                                 <i class="fas fa-{{ $stat['icon'] }} text-white text-lg"></i>
                             </div>
-                            <div class="text-left">
-                                <div class="text-3xl font-bold text-white mb-1">
-                                    @if(is_numeric($stat['value']))
-                                    <span class="counter" data-target="{{ $stat['value'] }}">0</span>{{ $stat['suffix'] }}
+                            <div class="text-left flex-1">
+                                <div class="stats-value text-white mb-1">
+                                    @if(is_numeric(str_replace('+', '', $stat['value'])) && str_replace('+', '', $stat['value']) > 0)
+                                    <span class="counter" data-target="{{ str_replace('+', '', $stat['value']) }}">0</span>{{ $stat['suffix'] }}
                                     @else
                                     {{ $stat['value'] }}{{ $stat['suffix'] }}
                                     @endif
                                 </div>
-                                <div class="text-sm text-white/80 font-medium">{{ $stat['label'] }}</div>
+                                <div class="stats-label text-white/80">{{ $stat['label'] }}</div>
                             </div>
                         </div>
                     </div>
@@ -135,7 +135,7 @@
                     $features = [
                         [
                             'icon' => 'user-shield',
-                            'emoji' => '🤫',
+                            'fa_icon' => 'lock',
                             'color' => 'purple',
                             'title' => 'Super Private',
                             'desc' => 'Cerita kamu cuma antara kamu dan BK. Ga ada yang tahu!',
@@ -144,7 +144,7 @@
                         ],
                         [
                             'icon' => 'bolt',
-                            'emoji' => '⚡',
+                            'fa_icon' => 'bolt',
                             'color' => 'blue',
                             'title' => 'Respon Cepat',
                             'desc' => 'Kasus urgent diprioritaskan. Biasanya dibales dalam 24 jam.',
@@ -153,7 +153,7 @@
                         ],
                         [
                             'icon' => 'gamepad',
-                            'emoji' => '🎮',
+                            'fa_icon' => 'gamepad',
                             'color' => 'pink',
                             'title' => 'Seru & Easy',
                             'desc' => 'Desain kekinian yang gampang dipake dan nyaman di mata.',
@@ -168,9 +168,9 @@
                     <div class="relative h-full">
                         <!-- Main Card -->
                         <div class="relative bg-white p-8 rounded-3xl border-2 border-gray-100 h-full transform transition-all duration-500 group-hover:-translate-y-4 group-hover:border-{{ $feature['color'] }}-200 group-hover:shadow-2xl">
-                            <!-- Corner Emoji -->
-                            <div class="absolute -top-3 -right-3 text-3xl transform group-hover:scale-125 group-hover:rotate-12 transition-transform duration-500">
-                                {{ $feature['emoji'] }}
+                            <!-- Corner Icon -->
+                            <div class="absolute -top-3 -right-3 text-2xl transform group-hover:scale-125 group-hover:rotate-12 transition-transform duration-500">
+                                <i class="fas fa-{{ $feature['fa_icon'] }} text-{{ $feature['color'] }}-500"></i>
                             </div>
                             
                             <!-- Icon -->
@@ -196,7 +196,9 @@
                             <!-- Hover Reveal -->
                             <div class="absolute inset-0 bg-gradient-to-br from-{{ $feature['color'] }}-50 to-white/80 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
                                 <div class="text-center p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                    <div class="text-4xl mb-3">{{ ['🔒', '🚀', '✨'][$index] }}</div>
+                                    <div class="text-3xl mb-3 text-{{ $feature['color'] }}-600">
+                                        <i class="fas fa-{{ $index == 0 ? 'shield-alt' : ($index == 1 ? 'rocket' : 'magic') }}"></i>
+                                    </div>
                                     <div class="font-bold text-gray-900 text-lg">{{ $feature['hover_text'] }}</div>
                                 </div>
                             </div>
@@ -247,8 +249,8 @@
                                 'title' => 'Curhat Online', 
                                 'desc' => 'Isi form dengan jujur apa yang kamu rasakan', 
                                 'icon' => 'edit', 
+                                'fa_icon' => 'comment-dots',
                                 'color' => 'blue', 
-                                'emoji' => '💬',
                                 'time' => '2 menit',
                                 'tip' => 'Jujur = Solusi tepat!'
                             ],
@@ -257,8 +259,8 @@
                                 'title' => 'Dapat Kode Rahasia', 
                                 'desc' => 'Simpan kode tracking untuk pantau progress', 
                                 'icon' => 'key', 
+                                'fa_icon' => 'key',
                                 'color' => 'purple', 
-                                'emoji' => '🔐',
                                 'time' => 'Instan',
                                 'tip' => 'Jangan sampai hilang!'
                             ],
@@ -267,8 +269,8 @@
                                 'title' => 'Diproses BK', 
                                 'desc' => 'Tim BK analisa dan siapkan solusi terbaik', 
                                 'icon' => 'search', 
+                                'fa_icon' => 'user-tie',
                                 'color' => 'pink', 
-                                'emoji' => '👩‍🏫',
                                 'time' => '1-2 hari',
                                 'tip' => 'Profesional handal!'
                             ],
@@ -277,8 +279,8 @@
                                 'title' => 'Solusi Siap!', 
                                 'desc' => 'Dapat bantuan & follow-up berkala', 
                                 'icon' => 'heart', 
+                                'fa_icon' => 'sparkles',
                                 'color' => 'green', 
-                                'emoji' => '✨',
                                 'time' => 'Follow-up',
                                 'tip' => 'Kamu nggak sendiri!'
                             ],
@@ -297,9 +299,9 @@
                             <!-- Step Number Background -->
                             <div class="absolute -top-4 -right-4 text-7xl font-black text-{{ $step['color'] }}-50">{{ $step['num'] }}</div>
                             
-                            <!-- Emoji Badge -->
-                            <div class="absolute -top-3 -left-3 text-2xl bg-white p-2 rounded-xl shadow-lg transform group-hover:rotate-12 transition-transform">
-                                {{ $step['emoji'] }}
+                            <!-- Icon Badge -->
+                            <div class="absolute -top-3 -left-3 text-xl bg-white p-2 rounded-xl shadow-lg transform group-hover:rotate-12 transition-transform text-{{ $step['color'] }}-600">
+                                <i class="fas fa-{{ $step['fa_icon'] }}"></i>
                             </div>
                             
                             <!-- Main Content -->
@@ -429,7 +431,7 @@
                                 </div>
                                 <div class="text-xs text-gray-400 mt-1 flex items-center gap-1">
                                     <i class="far fa-clock"></i>
-                                    {{ $testimonial->created_at->diffForHumans() }}
+                                   {{ optional($testimonial->created_at)->diffForHumans() }}
                                 </div>
                             </div>
                         </div>
@@ -516,11 +518,11 @@
                 <div class="space-y-8" data-aos="fade-right">
                     @php
                         $problemTypes = [
-                            ['type' => 'Masalah Akademik', 'percent' => 35, 'color' => 'blue', 'icon' => 'book', 'emoji' => '📚'],
-                            ['type' => 'Konflik Pertemanan', 'percent' => 25, 'color' => 'purple', 'icon' => 'users', 'emoji' => '👥'],
-                            ['type' => 'Keluarga & Orang Tua', 'percent' => 20, 'color' => 'pink', 'icon' => 'home', 'emoji' => '🏠'],
-                            ['type' => 'Kecemasan & Stress', 'percent' => 15, 'color' => 'orange', 'icon' => 'brain', 'emoji' => '😰'],
-                            ['type' => 'Percaya Diri', 'percent' => 5, 'color' => 'green', 'icon' => 'star', 'emoji' => '⭐'],
+                            ['type' => 'Masalah Akademik', 'percent' => 35, 'color' => 'blue', 'icon' => 'book', 'fa_icon' => 'book'],
+                            ['type' => 'Konflik Pertemanan', 'percent' => 25, 'color' => 'purple', 'icon' => 'users', 'fa_icon' => 'user-friends'],
+                            ['type' => 'Keluarga & Orang Tua', 'percent' => 20, 'color' => 'pink', 'icon' => 'home', 'fa_icon' => 'home'],
+                            ['type' => 'Kecemasan & Stress', 'percent' => 15, 'color' => 'orange', 'icon' => 'brain', 'fa_icon' => 'brain'],
+                            ['type' => 'Percaya Diri', 'percent' => 5, 'color' => 'green', 'icon' => 'star', 'fa_icon' => 'star'],
                         ];
                     @endphp
                     
@@ -529,9 +531,8 @@
                         <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center gap-3">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">{{ $problem['emoji'] }}</span>
                                     <div class="w-10 h-10 bg-{{ $problem['color'] }}-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                        <i class="fas fa-{{ $problem['icon'] }} text-{{ $problem['color'] }}-600"></i>
+                                        <i class="fas fa-{{ $problem['fa_icon'] }} text-{{ $problem['color'] }}-600"></i>
                                     </div>
                                 </div>
                                 <span class="font-semibold text-gray-900">{{ $problem['type'] }}</span>
@@ -562,7 +563,9 @@
                             
                             <!-- Content -->
                             <div class="relative z-10">
-                                <div class="text-6xl mb-6 transform group-hover:scale-110 transition-transform duration-500 inline-block">📈</div>
+                                <div class="text-4xl mb-6 transform group-hover:scale-110 transition-transform duration-500 inline-block">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
                                 <h3 class="text-2xl font-bold mb-4">Fakta Menarik</h3>
                                 <p class="text-blue-100 mb-8 leading-relaxed">
                                     <span class="text-yellow-300 font-semibold">{{ $totalComplaints ?? 0 }} siswa</span> telah menemukan solusi melalui platform CINTA. 
@@ -606,7 +609,7 @@
     <section class="relative py-24 overflow-hidden bg-gradient-to-br from-purple-900 via-pink-900 to-rose-900">
         <!-- Animated Background -->
         <div class="absolute inset-0">
-            <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" fill="%239C92AC" fill-opacity="0.05" fill-rule="evenodd"/%3E%3C/svg%3E')] opacity-10"></div>
+            <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3 1.343 3 3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" fill="%239C92AC" fill-opacity="0.05" fill-rule="evenodd"/%3E%3C/svg%3E')] opacity-10"></div>
         </div>
         
         <!-- Interactive Stars -->
@@ -694,23 +697,56 @@
         </div>
         
         <!-- Floating Chat Bubble -->
-        <div class="absolute bottom-8 right-8 animate-float">
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20 max-w-xs">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                        <i class="fas fa-comment text-white"></i>
-                    </div>
-                    <div class="text-white text-sm">
-                        <div class="font-semibold">Butuh bantuan?</div>
-                        <div class="text-white/70">Klik tombol di atas!</div>
-                    </div>
+<div class="absolute bottom-8 right-8 animate-float">
+    <a href="{{ route('help') }}" class="block">
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20 max-w-xs hover:bg-white/20 transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                    <i class="fas fa-comment text-white"></i>
+                </div>
+                <div class="text-white text-sm">
+                    <div class="font-semibold">Butuh bantuan?</div>
+                    <div class="text-white/70">Klik untuk FAQ & Support</div>
                 </div>
             </div>
         </div>
-    </section>
+    </a>
+</div>
 
     <!-- Custom CSS Animations -->
     <style>
+        /* Background Ungu Fixed untuk Hero Section */
+        .hero-section.fixed-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Fix untuk stats cards */
+        .stats-card {
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .stats-value {
+            font-size: 1.875rem;
+            font-weight: 700;
+            line-height: 2.25rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stats-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.25rem;
+        }
+        
         /* Keyframe Animations */
         @keyframes float {
             0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -941,7 +977,7 @@
                 });
             }
             
-            // Animated Counters
+            // Animated Counters untuk stats cards
             const counters = document.querySelectorAll('.counter');
             const observerOptions = {
                 threshold: 0.5,
@@ -1130,25 +1166,6 @@
                 }
             `;
             document.head.appendChild(style);
-            
-            // Parallax Effect on Scroll
-            let ticking = false;
-            window.addEventListener('scroll', function() {
-                if (!ticking) {
-                    window.requestAnimationFrame(function() {
-                        const scrolled = window.pageYOffset;
-                        const heroSection = document.querySelector('section:first-of-type');
-                        
-                        if (heroSection) {
-                            const rate = scrolled * -0.5;
-                            heroSection.style.backgroundPosition = `center ${rate}px`;
-                        }
-                        
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
-            });
             
             // Initialize Particles.js if available
             if (typeof particlesJS !== 'undefined') {

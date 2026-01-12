@@ -455,6 +455,9 @@ Contoh: 'Sudah 2 minggu ini aku merasa sangat cemas karena nilai ulangan yang te
 
 @push('scripts')
 <script>
+    // FUNGSI UTAMA - Letakkan di ATAS
+    // ============================================
+    
     // Character counter dengan warna dan status
     function updateCharCount(textarea) {
         const count = textarea.value.length;
@@ -512,6 +515,35 @@ Contoh: 'Sudah 2 minggu ini aku merasa sangat cemas karena nilai ulangan yang te
         
         showNotification(messages[type] || 'Terima kasih sudah memilih jenis masalahmu!');
     }
+    
+    // Show success modal
+    function showSuccessModal(code) {
+        document.getElementById('successCode').textContent = code;
+        const modal = document.getElementById('successModal');
+        const modalContent = document.getElementById('modalContent');
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95');
+            modalContent.classList.add('scale-100');
+        }, 10);
+        
+        // Store code for copy
+        window.lastSuccessCode = code;
+    }
+    
+    // Copy code to clipboard
+    function copyCode() {
+        if (window.lastSuccessCode) {
+            navigator.clipboard.writeText(window.lastSuccessCode).then(() => {
+                showNotification('Kode berhasil disalin ke clipboard!');
+            });
+        }
+    }
+    
+    // ============================================
+    // EVENT HANDLERS DAN INISIALISASI
+    // ============================================
     
     // Problem type selection
     document.querySelectorAll('.problem-option').forEach(option => {
@@ -581,6 +613,10 @@ Contoh: 'Sudah 2 minggu ini aku merasa sangat cemas karena nilai ulangan yang te
         loadingOverlay.classList.remove('hidden');
         
         try {
+            // Ambil CSRF token
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.content : '';
+            
             // Kirim form secara asynchronous
             const formData = new FormData(this);
             
@@ -588,7 +624,7 @@ Contoh: 'Sudah 2 minggu ini aku merasa sangat cemas karena nilai ulangan yang te
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json'
                 }
             });
@@ -614,31 +650,6 @@ Contoh: 'Sudah 2 minggu ini aku merasa sangat cemas karena nilai ulangan yang te
             loadingOverlay.classList.add('hidden');
         }
     });
-    
-    // Show success modal
-    function showSuccessModal(code) {
-        document.getElementById('successCode').textContent = code;
-        const modal = document.getElementById('successModal');
-        const modalContent = document.getElementById('modalContent');
-        
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modalContent.classList.remove('scale-95');
-            modalContent.classList.add('scale-100');
-        }, 10);
-        
-        // Store code for copy
-        window.lastSuccessCode = code;
-    }
-    
-    // Copy code to clipboard
-    function copyCode() {
-        if (window.lastSuccessCode) {
-            navigator.clipboard.writeText(window.lastSuccessCode).then(() => {
-                showNotification('Kode berhasil disalin ke clipboard!');
-            });
-        }
-    }
     
     // Initialize character count with old value
     document.addEventListener('DOMContentLoaded', function() {
@@ -780,4 +791,3 @@ Contoh: 'Sudah 2 minggu ini aku merasa sangat cemas karena nilai ulangan yang te
 </style>
 @endpush
 @endsection
-

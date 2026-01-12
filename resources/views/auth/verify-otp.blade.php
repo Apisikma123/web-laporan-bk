@@ -8,10 +8,14 @@
 
 @php
     $debugOtp = session('otp_code_debug');
+    $otpSentAt = session('otp_sent_at'); // timestamp
+    $now = now()->timestamp;
+    $cooldownRemaining = $otpSentAt ? max(0, 60 - ($now - $otpSentAt)) : 60;
+    $canResend = $otpSentAt && $cooldownRemaining <= 0;
 @endphp
 
 @section('content')
-<form method="POST" action="{{ route('verify.otp') }}" class="space-y-8">
+<form method="POST" action="{{ route('verify.otp') }}" class="space-y-8" id="verifyForm">
     @csrf
 
     <!-- Email Info -->
@@ -67,8 +71,7 @@
         <div class="flex justify-center space-x-4">
             @for($i = 0; $i < 6; $i++)
             <input type="text" 
-                   name="otp[]" 
-                   maxlength="1" 
+                   maxlength="1"
                    data-index="{{ $i }}"
                    class="otp-input w-16 h-16 text-3xl text-center font-bold 
                           border-2 border-gray-300 rounded-xl 
@@ -80,31 +83,50 @@
             @endfor
         </div>
         
-        <!-- Hidden field for complete OTP -->
-        <input type="hidden" name="otp_complete" id="otpComplete">
+        <!-- Hidden field with correct name for Laravel validation -->
+        <input type="hidden" name="otp" id="otpComplete">
         
         <p class="mt-4 text-sm text-gray-500 text-center">
             <svg class="w-4 h-4 inline-block mr-1 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
             </svg>
-            Kode OTP berlaku 15 menit
+            Kode OTP berlaku 3 menit
         </p>
     </div>
 
-    <!-- Timer Display -->
+    <!-- Paste Button (only in debug mode) -->
+    @if($debugOtp)
     <div class="text-center">
-        <div class="inline-flex items-center bg-gradient-to-r from-amber-50 to-yellow-50 px-6 py-3 rounded-xl">
-            <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        <button type="button"
+                onclick="pasteDebugOtp()"
+                class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium group transition duration-200">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2m-4-7v3m-4-3h3" />
             </svg>
-            <span id="timer" class="text-lg font-bold text-amber-700">15:00</span>
-            <span class="ml-2 text-amber-600">detik tersisa</span>
-        </div>
+            Tempel OTP Debug
+        </button>
+    </div>
+    @endif
+
+    <!-- Resend Section -->
+    <div class="text-center mt-4">
+        <p class="text-sm text-gray-600 mb-2">Tidak menerima kode?</p>
+        @if($canResend)
+            <button type="button"
+                    onclick="resendOtp()"
+                    class="text-purple-600 font-medium hover:text-purple-800 transition duration-200 underline">
+                Kirim Ulang OTP
+            </button>
+        @else
+            <span class="text-gray-500">
+                Kirim ulang tersedia dalam <span id="resendTimer" class="font-bold text-amber-700">{{ $cooldownRemaining }}</span> detik
+            </span>
+        @endif
     </div>
 
     <!-- Submit Button -->
     <div class="pt-4">
-        <button type="submit" onclick="collectOTP()"
+        <button type="submit"
                 class="group relative w-full flex justify-center items-center py-5 px-6 
                        text-lg font-bold text-white bg-gradient-to-r from-purple-600 to-purple-700 
                        hover:from-purple-700 hover:to-purple-800 rounded-xl
@@ -126,133 +148,124 @@
     </div>
 </form>
 
-{{-- Di bagian setelah form --}}
 <script>
-// Auto-fill OTP jika ada OTP debug
 document.addEventListener('DOMContentLoaded', function() {
-    const debugOtp = "{{ session('otp_code_debug') }}";
+    const debugOtp = "{{ $debugOtp }}";
     
     if (debugOtp && debugOtp.length === 6) {
-        // Auto-fill OTP inputs
-        for (let i = 0; i < 6; i++) {
-            const input = document.querySelector(`.otp-input[data-index="${i}"]`);
-            if (input) {
-                input.value = debugOtp[i];
+        // Auto-fill only if user hasn't started typing
+        let hasInput = false;
+        document.querySelectorAll('.otp-input').forEach(input => {
+            if (input.value) hasInput = true;
+        });
+        if (!hasInput) {
+            for (let i = 0; i < 6; i++) {
+                const input = document.querySelector(`.otp-input[data-index="${i}"]`);
+                if (input) input.value = debugOtp[i];
             }
-        }
-        
-        // Auto-submit setelah 1 detik
-        setTimeout(() => {
             collectOTP();
-            document.querySelector('button[type="submit"]').click();
+        }
+    }
+
+    // Auto-focus first input
+    const firstInput = document.querySelector('.otp-input[data-index="0"]');
+    if (firstInput) firstInput.focus();
+
+    // Handle resend cooldown timer
+    @if(!$canResend && $cooldownRemaining > 0)
+    let resendTimeLeft = {{ $cooldownRemaining }};
+    const resendTimerEl = document.getElementById('resendTimer');
+    if (resendTimeLeft > 0 && resendTimerEl) {
+        const resendInterval = setInterval(() => {
+            resendTimeLeft--;
+            if (resendTimeLeft <= 0) {
+                clearInterval(resendInterval);
+                location.reload(); // show resend button
+            } else {
+                resendTimerEl.textContent = resendTimeLeft;
+            }
         }, 1000);
     }
+    @endif
 });
 
-// Function untuk collect OTP dari input boxes
 function collectOTP() {
-    const otpInputs = document.querySelectorAll('.otp-input');
+    const inputs = document.querySelectorAll('.otp-input');
     let otp = '';
-    otpInputs.forEach(input => {
-        otp += input.value;
-    });
-    
-    // Update hidden input
+    inputs.forEach(input => otp += input.value.trim());
     document.getElementById('otpComplete').value = otp;
-    
-    // Log untuk debugging
-    console.log('OTP Collected:', otp);
-    
     return otp;
 }
 
-// Update form submission
-document.querySelector('form').addEventListener('submit', function(e) {
-    const otp = collectOTP();
-    
-    if (otp.length !== 6) {
-        e.preventDefault();
-        alert('Harap masukkan 6 digit OTP');
-        return false;
-    }
-    
-    // Tambahkan hidden input untuk otp_complete
-    if (!document.getElementById('otpComplete')) {
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'otp_complete';
-        hiddenInput.id = 'otpComplete';
-        hiddenInput.value = otp;
-        this.appendChild(hiddenInput);
-    }
-});
-</script>
-
-<!-- OTP JavaScript -->
-<script>
-let timeLeft = 15 * 60; // 15 minutes in seconds
-const timerElement = document.getElementById('timer');
-
-function updateTimer() {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
-    if (timeLeft > 0) {
-        timeLeft--;
-        setTimeout(updateTimer, 1000);
-    } else {
-        timerElement.textContent = "00:00";
-        timerElement.parentElement.classList.remove('from-amber-50', 'to-yellow-50');
-        timerElement.parentElement.classList.add('from-red-50', 'to-pink-50');
-        timerElement.classList.remove('text-amber-700');
-        timerElement.classList.add('text-red-700');
-    }
-}
-
 function moveToNext(input) {
-    const value = input.value;
-    if (value.length === 1) {
+    if (input.value.length === 1) {
         const nextIndex = parseInt(input.dataset.index) + 1;
-        const nextInput = document.querySelector(`.otp-input[data-index="${nextIndex}"]`);
-        if (nextInput) {
-            nextInput.focus();
-        }
+        const next = document.querySelector(`.otp-input[data-index="${nextIndex}"]`);
+        if (next) next.focus();
     }
     collectOTP();
 }
 
-function handleBackspace(input, event) {
-    if (event.key === 'Backspace' && input.value === '') {
+function handleBackspace(input, e) {
+    if (e.key === 'Backspace' && !input.value) {
         const prevIndex = parseInt(input.dataset.index) - 1;
-        const prevInput = document.querySelector(`.otp-input[data-index="${prevIndex}"]`);
-        if (prevInput) {
-            prevInput.focus();
+        const prev = document.querySelector(`.otp-input[data-index="${prevIndex}"]`);
+        if (prev) {
+            prev.focus();
+            prev.value = '';
         }
     }
 }
 
-function collectOTP() {
-    const otpInputs = document.querySelectorAll('.otp-input');
-    let otp = '';
-    otpInputs.forEach(input => {
-        otp += input.value;
-    });
-    document.getElementById('otpComplete').value = otp;
-    
-    // Auto-submit when OTP is complete
-    if (otp.length === 6) {
-        document.querySelector('button[type="submit"]').click();
+// Form submit handler
+document.getElementById('verifyForm').addEventListener('submit', function(e) {
+    const otp = collectOTP();
+    if (otp.length !== 6) {
+        e.preventDefault();
+        alert('Harap masukkan 6 digit OTP.');
+        return false;
+    }
+    // Disable button to prevent double submit
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="flex items-center"><svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>Memverifikasi...</span>';
+});
+
+// Paste debug OTP
+function pasteDebugOtp() {
+    const debug = "{{ $debugOtp }}";
+    if (debug && debug.length === 6) {
+        const inputs = document.querySelectorAll('.otp-input');
+        inputs.forEach((input, i) => {
+            if (i < 6) input.value = debug[i] || '';
+        });
+        collectOTP();
+        // Optional: auto-submit
+        // document.getElementById('verifyForm').submit();
     }
 }
 
-// Initialize timer
-updateTimer();
+// Resend OTP (separate form)
+function resendOtp() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route('resend.otp') }}';
 
-// Auto-focus first OTP input
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelector('.otp-input[data-index="0"]').focus();
-});
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = '{{ csrf_token() }}';
+
+    const email = document.createElement('input');
+    email.type = 'hidden';
+    email.name = 'email';
+    email.value = '{{ session('otp_email') }}';
+
+    form.appendChild(csrf);
+    form.appendChild(email);
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 @endsection
 

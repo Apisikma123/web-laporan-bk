@@ -41,9 +41,11 @@
                             </div>
                         </div>
                         
-                        <form action="{{ route('testimonial.store') }}" method="POST" id="testimonialForm">
+                        <!-- PERBAIKAN: route('testimoni.store') dan field names -->
+                        <form action="{{ route('testimoni.store') }}" method="POST" id="testimonialForm">
                             @csrf
-                            <input type="hidden" name="complaint_code" value="{{ $complaint->unique_code ?? '' }}">
+                            <!-- PERBAIKAN: complaint_id bukan complaint_code -->
+                            <input type="hidden" name="complaint_id" value="{{ $complaint->id ?? '' }}">
                             
                             <!-- Rating -->
                             <div class="mb-8">
@@ -111,7 +113,8 @@ Contoh: 'Saya sangat terbantu dengan konseling dari Bu Guru. Beliau sangat memah
                                         </div>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" name="anonymous" class="sr-only peer">
+                                        <!-- PERBAIKAN: is_anonymous bukan anonymous -->
+                                        <input type="checkbox" name="is_anonymous" value="1" class="sr-only peer">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-500"></div>
                                     </label>
                                 </div>
@@ -372,32 +375,29 @@ Contoh: 'Saya sangat terbantu dengan konseling dari Bu Guru. Beliau sangat memah
             info: 'from-yellow-500 to-orange-500'
         };
         
-        const toast = `
-            <div class="fixed bottom-4 right-4 z-50 animate-slideInRight">
-                <div class="bg-gradient-to-r ${colors[type]} text-white rounded-xl shadow-xl p-4 max-w-sm">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 mr-3">
-                            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm">${message}</p>
-                        </div>
-                        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white opacity-70 hover:opacity-100">
-                            <i class="fas fa-times"></i>
-                        </button>
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 z-50 animate-slideInRight';
+        toast.innerHTML = `
+            <div class="bg-gradient-to-r ${colors[type]} text-white rounded-xl shadow-xl p-4 max-w-sm">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 mr-3">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
                     </div>
+                    <div class="flex-1">
+                        <p class="text-sm">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="ml-2 text-white opacity-70 hover:opacity-100">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
         `;
         
-        document.body.insertAdjacentHTML('beforeend', toast);
+        document.body.appendChild(toast);
         
         setTimeout(() => {
-            const toastEl = document.querySelector('.fixed.bottom-4.right-4');
-            if (toastEl) {
-                toastEl.classList.add('animate-slideOutRight');
-                setTimeout(() => toastEl.remove(), 500);
-            }
+            toast.classList.add('animate-slideOutRight');
+            setTimeout(() => toast.remove(), 500);
         }, 5000);
     }
     

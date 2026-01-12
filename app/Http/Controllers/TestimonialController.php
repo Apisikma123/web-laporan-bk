@@ -1,139 +1,50 @@
 <?php
+// app/Http\Controllers/TestimonialController.php
 
 namespace App\Http\Controllers;
 
+use App\Models\Complaint;
 use App\Models\Testimonial;
 use Illuminate\Http\Request;
 
 class TestimonialController extends Controller
 {
-    // Public view untuk siswa
-    public function index()
+    public function create($code)
     {
-        $testimonials = Testimonial::where('is_approved', true)
-            ->orderBy('created_at', 'desc')
-            ->paginate(12);
+        // Cari complaint berdasarkan kode dan pastikan status completed
+        $complaint = Complaint::where('unique_code', $code)
+            ->where('status', 'completed')
+            ->firstOrFail();
         
-        return view('testimonials.index', compact('testimonials'));
+        // PERBAIKAN INI: Ganti 'admin.testimonials.create' dengan 'Students.complaints.testimoni'
+        return view('Students.complaints.testimonial', compact('complaint'));
     }
     
-    // Store testimonial dari siswa
     public function store(Request $request)
     {
-        $request->validate([
-            'student_name' => 'required|string|max:255',
-            'student_class' => 'nullable|string|max:50',
-            'message' => 'required|string|min:20|max:500',
+        $validated = $request->validate([
+            'complaint_id' => 'required|exists:complaints,id',
             'rating' => 'required|integer|min:1|max:5',
+            'testimonial' => 'required|string|min:10|max:1000',
+            'is_anonymous' => 'boolean',
         ]);
         
-        Testimonial::create([
-            'student_name' => $request->student_name,
-            'student_class' => $request->student_class,
-            'message' => $request->message,
-            'rating' => $request->rating,
-            'is_approved' => false, // Menunggu persetujuan admin
-            'show_in_homepage' => true,
+        // Cari complaint untuk mendapatkan data student
+        $complaint = Complaint::findOrFail($validated['complaint_id']);
+        
+        // Simpan testimoni
+        $testimonial = Testimonial::create([
+            'complaint_id' => $validated['complaint_id'],
+            'unique_code' => 'TESTI-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+            'student_name' => $validated['is_anonymous'] ? 'Anonim' : $complaint->student_name,
+            'student_class' => $complaint->student_class,
+            'rating' => $validated['rating'],
+            'testimonial' => $validated['testimonial'],
+            'is_approved' => false,
+            'is_anonymous' => $validated['is_anonymous'] ?? false,
         ]);
         
-        return redirect()->back()
-            ->with('success', 'Terima kasih! Testimoni Anda telah dikirim dan menunggu persetujuan admin.');
-    }
-    
-    // Admin methods
-    public function adminIndex()
-    {
-        $testimonials = Testimonial::latest()->paginate(20);
-        return view('admin.testimonials.index', compact('testimonials'));
-    }
-    
-    public function create()
-    {
-        return view('admin.testimonials.create');
-    }
-    
-    public function adminStore(Request $request)
-    {
-        $request->validate([
-            'student_name' => 'required|string|max:255',
-            'student_class' => 'nullable|string|max:50',
-            'message' => 'required|string|min:20|max:500',
-            'rating' => 'required|integer|min:1|max:5',
-        ]);
-        
-        Testimonial::create([
-            'student_name' => $request->student_name,
-            'student_class' => $request->student_class,
-            'message' => $request->message,
-            'rating' => $request->rating,
-            'is_approved' => $request->has('is_approved'),
-            'show_in_homepage' => $request->has('show_in_homepage'),
-        ]);
-        
-        return redirect()->route('admin.testimonials.index')
-            ->with('success', 'Testimonial berhasil ditambahkan.');
-    }
-    
-    public function edit($id)
-    {
-        $testimonial = Testimonial::findOrFail($id);
-        return view('admin.testimonials.edit', compact('testimonial'));
-    }
-    
-    public function update(Request $request, $id)
-    {
-        $testimonial = Testimonial::findOrFail($id);
-        
-        $request->validate([
-            'student_name' => 'required|string|max:255',
-            'student_class' => 'nullable|string|max:50',
-            'message' => 'required|string|min:20|max:500',
-            'rating' => 'required|integer|min:1|max:5',
-        ]);
-        
-        $testimonial->update([
-            'student_name' => $request->student_name,
-            'student_class' => $request->student_class,
-            'message' => $request->message,
-            'rating' => $request->rating,
-            'is_approved' => $request->has('is_approved'),
-            'show_in_homepage' => $request->has('show_in_homepage'),
-        ]);
-        
-        return redirect()->route('admin.testimonials.index')
-            ->with('success', 'Testimonial berhasil diperbarui.');
-    }
-    
-    public function destroy($id)
-    {
-        $testimonial = Testimonial::findOrFail($id);
-        $testimonial->delete();
-        
-        return redirect()->route('admin.testimonials.index')
-            ->with('success', 'Testimonial berhasil dihapus.');
-    }
-    
-    public function toggleApproval($id)
-    {
-        $testimonial = Testimonial::findOrFail($id);
-        $testimonial->update([
-            'is_approved' => !$testimonial->is_approved,
-        ]);
-        
-        $status = $testimonial->is_approved ? 'disetujui' : 'tidak disetujui';
-        return redirect()->back()
-            ->with('success', "Testimonial berhasil $status.");
-    }
-    
-    public function toggleHomepage($id)
-    {
-        $testimonial = Testimonial::findOrFail($id);
-        $testimonial->update([
-            'show_in_homepage' => !$testimonial->show_in_homepage,
-        ]);
-        
-        $status = $testimonial->show_in_homepage ? 'ditampilkan' : 'disembunyikan';
-        return redirect()->back()
-            ->with('success', "Testimonial berhasil $status di homepage.");
+        return redirect()->route('Students.complaint.track')
+            ->with('success', 'Testimoni berhasil dikirim! Terima kasih atas masukan Anda.');
     }
 }

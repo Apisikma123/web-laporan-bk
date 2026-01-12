@@ -17,12 +17,14 @@ use Illuminate\Support\Facades\Schema;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Form konseling untuk siswa (tanpa login) - HARUS DI ATAS
+// PERBAIKI web.php jadi seperti ini:
+
 Route::prefix('konseling')->name('complaint.')->group(function () {
     Route::get('/buat', [ComplaintController::class, 'create'])->name('create');
     Route::post('/buat', [ComplaintController::class, 'store'])->name('store');
     Route::get('/cek', [ComplaintController::class, 'track'])->name('track'); 
     Route::post('/cek', [ComplaintController::class, 'check'])->name('check');
-    Route::get('/hasil/{code}', [ComplaintController::class, 'showResult'])->name('result'); // TAMBAH INI
+    // Route ini sudah ada di check method, tidak perlu route terpisah
 });
 
 // Testimonial routes
@@ -43,7 +45,7 @@ Route::middleware('guest')->group(function () {
     // Register Teacher
     Route::get('/register/teacher', [OtpController::class, 'showRegisterTeacherForm'])->name('register.teacher.form');
     Route::post('/register/teacher', [OtpController::class, 'registerTeacher'])->name('register.teacher');
-    
+    Route::post('/resend-otp', [OtpController::class, 'resendOtp'])->name('resend.otp');
     // Login routes
     Route::get('/login', function () {
         return view('auth.login');
@@ -186,3 +188,164 @@ Route::fallback(function () {
 if (file_exists(__DIR__.'/auth.php')) {
     require __DIR__.'/auth.php';
 }
+// Route untuk testimoni
+Route::get('/testimoni/{code}', [TestimonialController::class, 'create'])
+    ->name('testimoni.create');
+
+// Atau jika ingin sesuai dengan struktur folder:
+Route::get('/Students/complaints/testimonial/{code}', [TestimonialController::class, 'create'])
+    ->name('Students.complaints.testimonial');
+
+    // routes/web.php
+
+// Tambahkan route ini:
+Route::post('/testimoni/store', [TestimonialController::class, 'store'])
+    ->name('testimoni.store');
+
+
+// routes/web.php
+Route::get('/help', function () {
+    return view('help');
+})->name('help');
+
+// ==================== EMAIL TESTING ROUTES ====================
+Route::prefix('test')->group(function () {
+    
+    // Test Resend connection
+    Route::get('/resend-connection', function() {
+        try {
+            $resend = new \Resend(env('RESEND_API_KEY'));
+            $result = $resend->apiKeys->list();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Resend connection successful',
+                'api_key_status' => 'valid',
+                'account_info' => 'Connected to Resend API'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Resend connection failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    });
+    
+    // Test send email to student
+    Route::get('/email-student', function() {
+        try {
+            // Create dummy complaint
+            $complaint = new \stdClass();
+            $complaint->student_name = 'John Doe';
+            $complaint->unique_code = 'CINTA-TEST123';
+            $complaint->counseling_type = 'lainnya';
+            $complaint->created_at = now();
+            $complaint->tracking_link = route('complaint.track') . '?code=CINTA-TEST123';
+            $complaint->student_email = env('RESEND_TEST_EMAIL', 'test@gmail.com');
+            
+            // Send email
+            \Illuminate\Support\Facades\Mail::send('emails.student-confirmation', [
+                'student_name' => $complaint->student_name,
+                'unique_code' => $complaint->unique_code,
+                'problem_type' => ucfirst($complaint->counseling_type),
+                'submission_date' => $complaint->created_at->format('d F Y, H:i'),
+                'tracking_link' => $complaint->tracking_link,
+                'estimated_response' => '1-3 hari kerja',
+                'counseling_type_detail' => 'Masalah lain yang tidak termasuk dalam kategori di atas',
+            ], function($message) use ($complaint) {
+                $message->to($complaint->student_email)
+                        ->subject('✅ TEST: Konseling Diterima - ' . $complaint->unique_code);
+            });
+            
+            return "✅ Test email to STUDENT sent! Check: " . $complaint->student_email;
+            
+        } catch (\Exception $e) {
+            return "❌ Error: " . $e->getMessage() . "<br><pre>" . $e->getTraceAsString() . "</pre>";
+        }
+    });
+    
+    // Test send email to teacher
+    Route::get('/email-teacher', function() {
+        try {
+            // Create dummy complaint
+            $complaint = \App\Models\Complaint::first();
+            
+            if (!$complaint) {
+                $complaint = \App\Models\Complaint::create([
+                    'unique_code' => 'CINTA-TEST' . time(),
+                    'student_name' => 'Test Student',
+                    'student_email' => 'student@test.com',
+                    'student_class' => 'XII IPA 1',
+                    'phone_number' => '081234567890',
+                    'counseling_type' => 'lainnya',
+                    'description' => 'Ini adalah test email untuk kategori LAINNYA. Masalah yang dibahas adalah tentang spiritual dan ekonomi keluarga.',
+                    'status' => 'pending',
+                    'priority_level' => 'medium',
+                    'urgency_level' => 3,
+                ]);
+            }
+            
+            // Send to test email
+            \Illuminate\Support\Facades\Mail::send('emails.teacher-notification', [
+                'complaint' => $complaint,
+                'priority_badge' => '📋 LAINNYA',
+                'urgency_level' => $complaint->urgency_level,
+                'short_description' => \Illuminate\Support\Str::limit($complaint->description, 200),
+                'student_contact' => $complaint->phone_number ? 'WA: ' . $complaint->phone_number : 'Hanya email',
+                'action_link' => route('complaints.show', $complaint->id),
+                'submission_time' => $complaint->created_at->diffForHumans(),
+            ], function($message) use ($complaint) {
+                $message->to(env('RESEND_TEST_EMAIL', 'test@gmail.com'))
+                        ->subject('📋 TEST: Konsultasi Baru (Lainnya) - ' . $complaint->student_name);
+            });
+            
+            return "✅ Test email to TEACHER sent! Check: " . env('RESEND_TEST_EMAIL');
+            
+        } catch (\Exception $e) {
+            return "❌ Error: " . $e->getMessage();
+        }
+    });
+    
+    // Full system test
+    Route::get('/full-system', function() {
+        \Log::info('=== FULL SYSTEM TEST START ===');
+        
+        try {
+            // Test 1: Database connection
+            \DB::connection()->getPdo();
+            echo "✅ Database: Connected<br>";
+            
+            // Test 2: Resend API
+            $apiKey = env('RESEND_API_KEY');
+            echo "✅ Resend API Key: " . (strlen($apiKey) > 10 ? 'Set' : 'Missing') . "<br>";
+            
+            // Test 3: Send test email
+            Mail::raw('System test email at ' . now(), function($message) {
+                $message->to(env('RESEND_TEST_EMAIL', 'test@gmail.com'))
+                        ->subject('🔄 System Test - ' . now()->format('H:i:s'));
+            });
+            
+            echo "✅ Test email: Sent<br>";
+            
+            // Test 4: Check complaint categories
+            $types = ['akademik', 'sosial', 'karir', 'pribadi', 'darurat', 'lainnya'];
+            echo "✅ Complaint types: " . implode(', ', $types) . "<br>";
+            
+            \Log::info('=== FULL SYSTEM TEST PASSED ===');
+            
+            return "<br>✅ All tests passed! System ready.";
+            
+        } catch (\Exception $e) {
+            \Log::error('System test failed: ' . $e->getMessage());
+            return "❌ System test failed: " . $e->getMessage();
+        }
+    });
+});
+
+// Kirim ulang OTP
+Route::post('/register/otp/resend', [OtpController::class, 'resendOtp'])
+    ->name('request.otp.resend');
+
+

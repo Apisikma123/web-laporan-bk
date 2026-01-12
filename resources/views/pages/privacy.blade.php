@@ -10,7 +10,7 @@
 
 @section('page-title', 'Kebijakan Privasi')
 @section('page-description', 'Bagaimana kami melindungi dan mengelola data pribadi Anda')
-@section('last-updated', '29 Desember 2024')
+
 
 @section('content')
 <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 mb-10">
@@ -237,23 +237,5 @@
     </div>
 </div>
 
-<h2 class="text-2xl font-bold text-gray-900 mb-6">5. Kontak</h2>
-<p class="mb-6">Untuk pertanyaan atau permintaan terkait privasi, silakan hubungi:</p>
-<div class="bg-white rounded-xl p-6 shadow-sm">
-    <div class="flex flex-col md:flex-row md:items-center justify-between">
-        <div>
-            <h3 class="font-semibold text-gray-900 mb-2">Data Protection Officer</h3>
-            <p class="text-gray-600">Sistem CINTA</p>
-        </div>
-        <div class="mt-4 md:mt-0">
-            <a href="mailto:dpo@cinta.app" 
-               class="inline-flex items-center px-5 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 font-medium transition duration-200">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-                dpo@cinta.app
-            </a>
-        </div>
-    </div>
-</div>
+
 @endsection
